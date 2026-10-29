@@ -1,0 +1,40 @@
+services:
+  database:
+    image: postgres:alpine
+    container_name: vendor-tracker-db
+    restart: always
+    environment:
+      POSTGRES_DB: vendor
+      POSTGRES_USER: cuong
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  backend:
+    build: ./vendor-tracker-be
+    container_name: vendor-tracker-be
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://cuong:123456@database:5432/vendor?schema=public
+      JWT_SECRET: vendor-secret
+      ACCESS_TOKEN_EXPIRES: 1h
+    depends_on:
+      - database
+
+  frontend:
+    build: ./vendor-tracker-fe
+    container_name: vendor-tracker-fe
+    restart: always
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_BACKEND_URL: http://localhost:3000/api
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

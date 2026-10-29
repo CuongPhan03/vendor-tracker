@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VendorStage {
+  CONTRACT_SENT
+  CONTRACT_SIGNED
+  KYC_DOCS_RECEIVED
+  KYC_VERIFIED
+  ACTIVE
+
+  @@map("vendor_stage")
+}
+
+model User {
+  id        Int    @id @default(autoincrement())
+  name      String
+  email     String @unique
+  password  String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdVendors Vendor[]
+  stageHistory   VendorStageHistory[]
+
+  @@map("users")
+}
+
+model Vendor {
+  id             Int         @id @default(autoincrement())
+  name           String      @map("name")
+  region         String      @map("region")
+
+  stage          VendorStage @default(CONTRACT_SENT)
+  stageEnteredAt DateTime    @default(now()) @map("stage_entered_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
+
+  coordinatorId  Int         @map("coordinator_id")
+  coordinator    User        @relation(fields: [coordinatorId], references: [id])
+
+  stageHistory   VendorStageHistory[]
+
+  @@index([stage])
+  @@index([stageEnteredAt])
+  @@map("vendors")
+}
+
+model VendorStageHistory {
+  id            Int         @id @default(autoincrement())
+  vendorId      Int         @map("vendor_id")
+  changedById   Int         @map("changed_by")
+  previousStage VendorStage @map("previous_stage")
+  newStage      VendorStage @map("new_stage")
+  changedAt     DateTime    @default(now()) @map("changed_at")
+
+  vendor        Vendor      @relation(fields: [vendorId], references: [id])
+  changedBy     User        @relation(fields: [changedById], references: [id])
+
+  @@index([vendorId, changedAt(sort: Desc)])
+  @@index([changedById])
+  @@map("vendor_stage_history")
+}
